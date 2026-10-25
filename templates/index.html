@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoryVault | Your Personal Knowledge Archive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo"><span>✦</span> MemoryVault</a>
+        <span class="nav-label">Your Personal Knowledge Archive</span>
+    </header>
+
+    <main class="hero">
+        <section class="hero-content">
+            <span class="eyebrow">REMEMBER MORE. ACHIEVE MORE.</span>
+            <h1>Your knowledge,<br>all in <span>one place.</span></h1>
+            <p class="intro">
+                Keep your notes, daily tasks, ideas, and important information
+                organized. Save it today, find it whenever you need it.
+            </p>
+        </section>
+
+        <section class="category-section">
+            <h2>How will you use MemoryVault?</h2>
+            <p class="section-description">Choose your category to get started.</p>
+
+            <div class="category-grid">
+                <a href="{{ url_for('auth', role='student') }}" class="category-card">
+                    <div class="category-icon">📚</div>
+                    <h3>Student</h3>
+                    <p>Organize study notes, assignments, code snippets, and revision topics.</p>
+                    <span class="card-link">Get started →</span>
+                </a>
+
+                <a href="{{ url_for('auth', role='professional') }}" class="category-card">
+                    <div class="category-icon">💼</div>
+                    <h3>Working Professional</h3>
+                    <p>Keep track of work tasks, project notes, meetings, and ideas.</p>
+                    <span class="card-link">Get started →</span>
+                </a>
+
+                <a href="{{ url_for('auth', role='entrepreneur') }}" class="category-card">
+                    <div class="category-icon">🚀</div>
+                    <h3>Entrepreneur</h3>
+                    <p>Organize business ideas, action plans, goals, and decisions.</p>
+                    <span class="card-link">Get started →</span>
+                </a>
+            </div>
+        </section>
+
+        <p class="privacy-note">🔒 Your personal knowledge deserves a private space.</p>
+    </main>
+
+    <footer>
+        <p>MemoryVault © 2026 · Your Knowledge. Organized. Connected.</p>
+    </footer>
+</body>
+</html>

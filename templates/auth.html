@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account | MemoryVault</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo"><span>✦</span> MemoryVault</a>
+        <a href="/" class="card-link">← Change category</a>
+    </header>
+
+    <main class="hero">
+        <div class="hero-content">
+            <span class="eyebrow">YOUR SELECTED CATEGORY</span>
+            <h1>Welcome, <span>{{ role }}</span></h1>
+            <p class="intro">
+                Create your account or log in to access your personal workspace.
+            </p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="message {{ category }}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section class="auth-grid">
+            <div class="auth-card">
+                <h2>Create account</h2>
+                <p class="section-description">New to MemoryVault? Join here.</p>
+
+                <form method="POST"
+                      action="{{ url_for('register', role=role_key) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <label for="reg-name">Full name</label>
+                    <input id="reg-name" type="text" name="name"
+                           maxlength="100" autocomplete="name" required>
+
+                    <label for="reg-email">Email address</label>
+                    <input id="reg-email" type="email" name="email"
+                           maxlength="255" autocomplete="email" required>
+
+                    <label for="reg-password">Password</label>
+                    <input id="reg-password" type="password" name="password"
+                           minlength="8" autocomplete="new-password" required>
+                    <p class="field-help">Use at least 8 characters.</p>
+
+                    <button class="primary-button" type="submit">
+                        Register
+                    </button>
+                </form>
+            </div>
+
+            <div class="auth-card">
+                <h2>Log in</h2>
+                <p class="section-description">Already have an account? Welcome back.</p>
+
+                <form method="POST"
+                      action="{{ url_for('login', role=role_key) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <label for="login-email">Email address</label>
+                    <input id="login-email" type="email" name="email"
+                           autocomplete="email" required>
+
+                    <label for="login-password">Password</label>
+                    <input id="login-password" type="password" name="password"
+                           autocomplete="current-password" required>
+
+                    <button class="primary-button" type="submit">
+                        Log in
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

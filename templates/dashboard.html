@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | MemoryVault</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .mv-notes-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 9px;
+            background: #ff5a1f;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background 0.2s ease;
+        }
+
+        .mv-notes-btn:hover {
+            background: #e94b14;
+        }
+
+        .mv-user-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 600px) {
+            .mv-user-area {
+                gap: 8px;
+            }
+
+            .mv-notes-btn {
+                padding: 8px 11px;
+            }
+        }
+    </style>
+</head>
+
+<body class="mv-dashboard">
+
+    <!-- HEADER -->
+    <header class="mv-topbar">
+        <a href="{{ url_for('dashboard') }}" class="mv-brand">
+            <span class="mv-brand-icon">✦</span> MemoryVault
+        </a>
+
+        <div class="mv-user-area">
+            <span class="mv-role">{{ role }}</span>
+            <span class="mv-user-name">{{ current_user.name }}</span>
+
+            <!-- NEW: MY NOTES BUTTON -->
+            <a href="{{ url_for('notes') }}" class="mv-notes-btn">
+                📝 My Notes
+            </a>
+            <a href="{{ url_for('planner') }}" class="mv-notes-btn">📅 Learning Planner</a>
+
+            <form action="{{ url_for('logout') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="mv-logout">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="mv-container">
+
+        <!-- WELCOME -->
+        <section class="mv-welcome">
+            <p class="mv-eyebrow">YOUR PERSONAL WORKSPACE</p>
+            <h1>Welcome back, {{ current_user.name }}!</h1>
+            <p>Keep your tasks organized. Make progress every day.</p>
+        </section>
+
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mv-messages">
+                    {% for category, message in messages %}
+                        <div class="mv-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- TASK STATISTICS -->
+        <section class="mv-stats">
+            <article class="mv-stat-card">
+                <span class="mv-stat-icon">📋</span>
+                <p>Total Tasks</p>
+                <h2>{{ total_tasks }}</h2>
+            </article>
+
+            <article class="mv-stat-card">
+                <span class="mv-stat-icon">⏳</span>
+                <p>Pending Tasks</p>
+                <h2>{{ pending_tasks }}</h2>
+            </article>
+
+            <article class="mv-stat-card">
+                <span class="mv-stat-icon">✓</span>
+                <p>Completed Tasks</p>
+                <h2>{{ completed_tasks }}</h2>
+            </article>
+        </section>
+
+        <section class="mv-stats">
+            <article class="mv-stat-card"><span class="mv-stat-icon">🗂️</span><p>Active Notes</p><h2>{{ total_notes }}</h2></article>
+            <article class="mv-stat-card"><span class="mv-stat-icon">📈</span><p>Task completion</p><h2>{{ completion_percent }}%</h2></article>
+            <article class="mv-stat-card"><span class="mv-stat-icon">⌛</span><p>Overdue tasks</p><h2>{{ overdue_tasks }}</h2></article>
+        </section>
+
+        <section class="mv-panel">
+            <div class="mv-section-heading"><div><p class="mv-eyebrow">QUICK ACCESS</p><h2>Recent notes</h2></div><a class="mv-notes-btn" href="{{ url_for('notes') }}">Browse notes</a></div>
+            {% if recent_notes %}<div class="mv-task-list">{% for note in recent_notes %}<article class="mv-task-card"><div class="mv-task-main"><div class="mv-task-title-row"><h3>{{ note.title }}</h3></div><p class="mv-task-description">{{ note.category }} · {{ note.note_type }} · {{ note.updated_at.strftime('%Y-%m-%d') }}</p></div><a class="mv-edit-btn" href="{{ url_for('edit_note', note_id=note.id) }}">Open</a></article>{% endfor %}</div>{% else %}<p>Save a note to see it here.</p>{% endif %}
+            {% if notes_by_category %}<p style="margin-top:18px">Notes by category: {% for category,count in notes_by_category.items() %}<span class="mv-task-count">{{ category }} · {{ count }}</span> {% endfor %}</p>{% endif %}
+            <div style="margin-top:20px"><h3>This week's activity</h3><p>{{ weekly_logs|length }} learning logs · {{ weekly_completed_count }} tasks completed</p>{% for log in weekly_logs %}<p>{{ log.log_date.strftime('%a, %b %d') }} · {{ log.title }}</p>{% else %}<p class="mv-task-description">Add a daily learning entry in the planner.</p>{% endfor %}</div>
+        </section>
+
+        <!-- CREATE NEW TASK -->
+        <section class="mv-panel">
+            <div class="mv-section-heading">
+                <div>
+                    <p class="mv-eyebrow">STAY ON TRACK</p>
+                    <h2>Create a new task</h2>
+                </div>
+                <span class="mv-heading-icon">＋</span>
+            </div>
+
+            <form action="{{ url_for('add_task') }}"
+                  method="POST"
+                  class="mv-task-form">
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mv-field mv-full">
+                    <label for="title">Task title *</label>
+                    <input type="text" id="title" name="title"
+                           maxlength="150"
+                           placeholder="e.g. Complete Python assignment"
+                           required>
+                </div>
+
+                <div class="mv-field mv-full">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description"
+                              rows="3"
+                              placeholder="Add details about this task..."></textarea>
+                </div>
+
+                <div class="mv-field">
+                    <label for="due_date">Due date</label>
+                    <input type="date" id="due_date" name="due_date">
+                </div>
+
+                <div class="mv-field">
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+
+                <div class="mv-full">
+                    <button type="submit" class="mv-primary-btn">
+                        + Add Task
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- MY TASKS -->
+        <section class="mv-task-section">
+
+            <div class="mv-section-heading">
+                <div>
+                    <p class="mv-eyebrow">YOUR DAILY PROGRESS</p>
+                    <h2>My Tasks</h2>
+                </div>
+                <span class="mv-task-count">{{ total_tasks }} tasks</span>
+            </div>
+
+            <!-- STATUS AND PRIORITY FILTERS -->
+            <form action="{{ url_for('dashboard') }}"
+                  method="GET"
+                  class="mv-filter-form">
+
+                <div class="mv-field">
+                    <label for="status_filter">Filter by Status</label>
+                    <select id="status_filter" name="status">
+                        <option value="All"
+                            {% if status_filter == 'All' %}selected{% endif %}>
+                            All Tasks
+                        </option>
+                        <option value="Pending"
+                            {% if status_filter == 'Pending' %}selected{% endif %}>
+                            Pending
+                        </option>
+                        <option value="Completed"
+                            {% if status_filter == 'Completed' %}selected{% endif %}>
+                            Completed
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mv-field">
+                    <label for="priority_filter">Filter by Priority</label>
+                    <select id="priority_filter" name="priority">
+                        <option value="All"
+                            {% if priority_filter == 'All' %}selected{% endif %}>
+                            All Priorities
+                        </option>
+                        <option value="Low"
+                            {% if priority_filter == 'Low' %}selected{% endif %}>
+                            Low
+                        </option>
+                        <option value="Medium"
+                            {% if priority_filter == 'Medium' %}selected{% endif %}>
+                            Medium
+                        </option>
+                        <option value="High"
+                            {% if priority_filter == 'High' %}selected{% endif %}>
+                            High
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mv-filter-actions">
+                    <button type="submit" class="mv-primary-btn">
+                        Apply Filters
+                    </button>
+                    <a href="{{ url_for('dashboard') }}" class="mv-reset-btn">
+                        Reset
+                    </a>
+                </div>
+            </form>
+
+            <!-- OVERDUE TASK COUNT -->
+            <p class="mv-overdue-summary">
+                ⚠️ Overdue tasks: <strong>{{ overdue_tasks }}</strong>
+            </p>
+
+            <!-- TASK LIST -->
+            {% if tasks %}
+                <div class="mv-task-list">
+                    {% for task in tasks %}
+                        <article class="mv-task-card {% if task.status == 'Completed' %}is-completed{% endif %}">
+
+                            <div class="mv-task-main">
+                                <div class="mv-task-title-row">
+                                    <h3>{{ task.title }}</h3>
+                                    <span class="mv-priority priority-{{ task.priority|lower }}">
+                                        {{ task.priority }}
+                                    </span>
+                                </div>
+
+                                {% if task.description %}
+                                    <p class="mv-task-description">
+                                        {{ task.description }}
+                                    </p>
+                                {% endif %}
+
+                                <div class="mv-task-meta">
+                                    <span>
+                                        📅
+                                        {% if task.due_date %}
+                                            Due {{ task.due_date.strftime('%d %b %Y') }}
+                                        {% else %}
+                                            No due date
+                                        {% endif %}
+                                    </span>
+
+                                    {% if task.status == 'Pending'
+                                          and task.due_date
+                                          and task.due_date < today %}
+                                        <span class="mv-overdue-badge">Overdue</span>
+                                    {% else %}
+                                        <span class="mv-status {% if task.status == 'Completed' %}status-done{% endif %}">
+                                            {{ task.status }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- TASK ACTIONS -->
+                            <div class="mv-task-actions">
+
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}"
+                                   class="mv-edit-btn">
+                                    ✎ Edit
+                                </a>
+
+                                <form action="{{ url_for('complete_task', task_id=task.id) }}"
+                                      method="POST">
+                                    <input type="hidden" name="csrf_token"
+                                           value="{{ csrf_token() }}">
+                                    <button type="submit" class="mv-complete-btn">
+                                        {% if task.status == 'Completed' %}
+                                            Mark Pending
+                                        {% else %}
+                                            Mark Complete
+                                        {% endif %}
+                                    </button>
+                                </form>
+
+                                <form action="{{ url_for('delete_task', task_id=task.id) }}"
+                                      method="POST"
+                                      onsubmit="return confirm('Delete this task?');">
+                                    <input type="hidden" name="csrf_token"
+                                           value="{{ csrf_token() }}">
+                                    <button type="submit" class="mv-delete-btn">
+                                        Delete
+                                    </button>
+                                </form>
+
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="mv-empty-state">
+                    <div class="mv-empty-icon">📝</div>
+                    <h3>No tasks found</h3>
+                    <p>
+                        No tasks match your selected filters.
+                        Try changing the filters or add a new task above.
+                    </p>
+                    <a href="{{ url_for('dashboard') }}" class="mv-reset-btn">
+                        View All Tasks
+                    </a>
+                </div>
+            {% endif %}
+
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="mv-footer">
+            MemoryVault · Your Knowledge. Organized. Connected.
+        </footer>
+
+    </main>
+
+</body>
+</html>
